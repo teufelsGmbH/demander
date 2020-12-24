@@ -1,13 +1,10 @@
 config.tx_demander {
   demandProviders {
-    10 = Pixelant\Demander\DemandProvider\ContentDemandProvider
-    20 = Pixelant\Demander\DemandProvider\PageDemandProvider
-    30 = Pixelant\Demander\DemandProvider\RequestDemandProvider
     40 = Pixelant\Demander\DemandProvider\TypoScriptDemandProvider
   }
 
   demands {
-    // Configurable demands array used by Pixelant\Demander\DemandProvider\TypoScriptDemandProvider
+
   }
 
   ui {

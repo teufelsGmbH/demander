@@ -5,9 +5,12 @@ declare(strict_types=1);
 
 namespace Pixelant\Demander\Service;
 
+use phpDocumentor\Reflection\Types\Array_;
 use Pixelant\Demander\DemandProvider\DemandProviderInterface;
 use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use \TYPO3\CMS\Extbase\Configuration\ConfigurationManager;
 
 /**
  * Main API entry point for using demands from the Demander Extension
@@ -45,7 +48,11 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
         ExpressionBuilder $expressionBuilder
     ): CompositeExpression
     {
-        // TODO: Set $demandArray to merged, returned values of $demandProviders
+        $demandArray = [];
+
+        foreach ($demandProviders as $demandProvider) {
+            $demandArray = $demandProvider->getDemand();
+        }
 
         return $this->getRestrictionsFromDemandArray($demandArray, $tables, $expressionBuilder);
     }
@@ -64,7 +71,45 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
         ExpressionBuilder $expressionBuilder
     ): CompositeExpression
     {
-        // TODO: Most of the code for getting restrictions in this class goes here
+        $demandArray = $this->restrictionsToInt($demandArray);
+        $expressions = [];
+
+        foreach ($demandArray as $key => $restrictions) {
+            if ($restrictions['operator']){
+                $fieldProps = $this->getFieldPropsFromAlias($key);
+            }else{
+                $fieldProps = $this->getFieldPropsFromAlias($restrictions, $key);
+            }
+
+            if (is_string($fieldProps)){
+                $expressions[] = $this->getExpressionFromRestrictions($fieldProps, $restrictions, $expressionBuilder);
+            }else{
+                if ($fieldProps['or']){
+                    $expressionsArr = [];
+
+                    foreach ($fieldProps['or'] as $fieldKey => $field){
+                        foreach ($field as $property) {
+                            $expressionsArr[] = $this->getExpressionFromRestrictions($fieldKey, $property, $expressionBuilder);
+                        }
+                    }
+
+                    $expressions[] = $expressionBuilder->orX(...$expressionsArr);
+                }else{
+                    $expressionsArr = [];
+
+                    foreach ($fieldProps['and'] as $field){
+                        foreach ($field as $fieldKey => $property) {
+                            $expressionsArr[] = $this->getExpressionFromRestrictions($fieldKey, $property, $expressionBuilder);
+                        }
+                    }
+
+                    $expressions[] = $expressionBuilder->andX(...$expressionsArr);
+                }
+            }
+
+        }
+
+        return $expressionBuilder->andX(...$expressions);
     }
 
     /**
@@ -187,6 +232,91 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
      */
     protected function getConfiguredDemandProviders(): array
     {
-        // TODO: Initialize DemandProvider objects configured in TypoScript and return in order of execution
+        $configurationManager = GeneralUtility::makeInstance(ConfigurationManager::class);
+        $config = $configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_FULL_TYPOSCRIPT)['config.']['tx_demander.'];
+        $demandProviders = [];
+
+        foreach ($config['demandProviders.'] as $id => $demandProvider)
+        {
+            $demandProviders[$id] = GeneralUtility::makeInstance($demandProvider);
+        }
+        return $demandProviders;
+    }
+
+    /**
+     * Transform necessary values from string to integer.
+     *
+     * @param array $restrictionsArray
+     * @return array
+     */
+    protected function restrictionsToInt(array $restrictionsArray): array
+    {
+        $restrictions = [];
+
+        foreach ($restrictionsArray as $key => $restriction) {
+            if ($restriction['value']) {
+                $value = (is_numeric($restriction['value'])) ? (int)$restriction['value'] : $restriction['value'];
+                $restriction = array_replace($restriction, ['value' => $value]);
+                $restrictions[$key] = $restriction;
+            }else{
+                $restrictions[$key] = $this->restrictionsToInt($restriction);
+            }
+        }
+
+        return $restrictions;
+    }
+
+    /**
+     * Resolve field name from alias or from array if OR, AND provided.
+     *
+     * @param mixed $alias
+     * @param null|string $rootKey
+     * @return mixed
+     */
+    protected function getFieldPropsFromAlias($alias, $rootKey = null)
+    {
+        if ($rootKey !== null){
+            $rootKey = mb_substr($rootKey, 0, -1);
+            $fieldProps = [];
+
+            foreach ($alias as $key => $subAlias){
+                $fieldProps[$rootKey][$this->getFieldPropsFromAlias($key)] = array(
+                    $subAlias
+                );
+            }
+
+            return $fieldProps;
+        }
+
+        return mb_substr((explode('-',  $alias)[1]), 0, -1);
+    }
+
+    /**
+     * @param string $fieldname
+     * @param array $restrictions
+     * @param ExpressionBuilder $expressionBuilder
+     * @return string
+     */
+    protected function getExpressionFromRestrictions(string $fieldname, array $restrictions, ExpressionBuilder $expressionBuilder): string
+    {
+        switch ($restrictions['operator']){
+            case $expressionBuilder::EQ:
+                return $expressionBuilder->eq($fieldname, $restrictions['value']);
+            case $expressionBuilder::GT:
+                return $expressionBuilder->gt($fieldname, $restrictions['value']);
+            case $expressionBuilder::GTE:
+                return $expressionBuilder->gte($fieldname, $restrictions['value']);
+            case $expressionBuilder::LT:
+                return $expressionBuilder->lt($fieldname, $restrictions['value']);
+            case $expressionBuilder::LTE:
+                return $expressionBuilder->lte($fieldname, $restrictions['value']);
+            case '-':
+                return $expressionBuilder->andX(
+                    $expressionBuilder->gte($fieldname, $restrictions['value'][0]),
+                    $expressionBuilder->lte($fieldname, $restrictions['value'][1])
+                )->__toString();
+            default:
+                return $fieldname;
+        }
     }
 }
