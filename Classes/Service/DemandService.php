@@ -5,7 +5,6 @@ declare(strict_types=1);
 
 namespace Pixelant\Demander\Service;
 
-use phpDocumentor\Reflection\Types\Array_;
 use Pixelant\Demander\DemandProvider\DemandProviderInterface;
 use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
