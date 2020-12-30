@@ -198,7 +198,7 @@ class DemandArrayUtility
             }
             return $fieldProperties;
         }
-        $fieldProperties[] = explode('-',  $alias[0])[1];
+        $fieldProperties[] = DemandArrayUtility::propertyNameToTableAndFieldName($alias[0])[1];
         return $fieldProperties;
     }
 }
