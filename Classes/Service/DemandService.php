@@ -147,20 +147,18 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
      */
     public function getUiConfigurationForProperty(string $propertyName): array
     {
-        $tableAndField = UiArrayUtility::propertyNameToTableAndFieldName($propertyName);
-        $table = $tableAndField[0];
-        $field = $tableAndField[1];
+        list($table, $field) = UiArrayUtility::propertyNameToTableAndFieldName($propertyName);
         $tcaConfiguration = $GLOBALS['TCA'][$table]['columns'][$field];
-        $configurationManager = GeneralUtility::makeInstance(ConfigurationManager::class);
-        $config = $configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_FULL_TYPOSCRIPT)['config.']['tx_demander.']['ui.'][$table.'.'][$field.'.'];
-        $config = UiArrayUtility::removeDotsFromKeys($config);
 
         if (!$tcaConfiguration){
             return [];
         }
 
-        return UiArrayUtility::overrideProperties($config, $tcaConfiguration);
+        $configurationManager = GeneralUtility::makeInstance(ConfigurationManager::class);
+        $config = $configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_FULL_TYPOSCRIPT)['config.']['tx_demander.']['ui.'][$table.'.'][$field.'.'];
+        $config = UiArrayUtility::removeDotsFromKeys($config);
 
+        return UiArrayUtility::overrideProperties($config, $tcaConfiguration);
     }
 
     /**
@@ -234,7 +232,7 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
         foreach ($restrictions as $restriction){
             if (is_array($restriction['value'])){
                 return $restriction['value'];
-            }else{
+            } else {
                 $innerBounds[] = $restriction['value'];
             }
         }

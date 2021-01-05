@@ -60,8 +60,6 @@ class UiArrayUtility {
         foreach ($overrideProperties as $key => $property){
             if (array_key_exists($key, $defaultProperties)){
                 $filteredArray[$key] = $property;
-            }else{
-                continue;
             }
         }
 

@@ -65,7 +65,7 @@ class DemandArrayUtility
 
         foreach ($tables as $alias => $table) {
             foreach ($array as $tableFieldAlias => $values){
-                if (is_array(reset($values))){
+                if (is_array($values[array_key_first($values)])){
                     $filteredArray[$tableFieldAlias] = DemandArrayUtility::filterByTables($tables,$values);
                 }else{
                     $tableName = DemandArrayUtility::propertyNameToTableAndFieldName($tableFieldAlias)[0];
@@ -118,7 +118,7 @@ class DemandArrayUtility
 
         foreach ($array as $key => $value){
             if (is_array($value)){
-                if (is_array(reset($value))){
+                if (is_array($value[array_key_first($value)])){
                     $key = trim($key, '.');
                     $filteredArray[$key] = DemandArrayUtility::removeDotsFromKeys($value);
                 }else{
