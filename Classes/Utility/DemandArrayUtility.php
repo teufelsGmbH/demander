@@ -53,7 +53,7 @@ class DemandArrayUtility
     }
 
     /**
-     * Filter a demand array to include only requests tables and their relevant relations
+     * Filter array to include only requests tables and their relevant relations
      *
      * @param array $tables Array of tables, where array key is table alias and value is a table name
      * @param array $array The demand array
@@ -65,14 +65,14 @@ class DemandArrayUtility
 
         foreach ($tables as $alias => $table) {
             foreach ($array as $tableFieldAlias => $values){
-                if ($values['operator']){
-                    $tableName = explode('-', $tableFieldAlias)[0];
+                if (is_array(reset($values))){
+                    $filteredArray[$tableFieldAlias] = DemandArrayUtility::filterByTables($tables,$values);
+                }else{
+                    $tableName = DemandArrayUtility::propertyNameToTableAndFieldName($tableFieldAlias)[0];
 
                     if ($tableName === $table){
                         $filteredArray[$tableFieldAlias] = $values;
                     }
-                }else{
-                    $filteredArray[$tableFieldAlias] = DemandArrayUtility::filterByTables($tables,$values);
                 }
             }
         }
@@ -117,12 +117,17 @@ class DemandArrayUtility
         $filteredArray = [];
 
         foreach ($array as $key => $value){
-            if ($value['operator']){
+            if (is_array($value)){
+                if (is_array(reset($value))){
+                    $key = trim($key, '.');
+                    $filteredArray[$key] = DemandArrayUtility::removeDotsFromKeys($value);
+                }else{
+                    $key = trim($key, '.');
+                    $filteredArray[$key] = $value;
+                }
+            } else{
                 $key = trim($key, '.');
                 $filteredArray[$key] = $value;
-            }else{
-                $key = trim($key, '.');
-                $filteredArray[$key] = DemandArrayUtility::removeDotsFromKeys($value);
             }
         }
         return $filteredArray;
@@ -139,16 +144,16 @@ class DemandArrayUtility
         $restrictions = [];
 
         foreach ($restrictionsArray as $key => $restriction) {
-            if ($restriction['value']) {
-                $value = (is_numeric($restriction['value'])) ? (int)$restriction['value'] : $restriction['value'];
-                $restriction = array_replace($restriction, ['value' => $value]);
-                $restrictions[$key] = $restriction;
-            }else{
+            if (is_array($restriction)) {
                 $restrictions[$key] = DemandArrayUtility::restrictionsToInt($restriction);
+            }
+            else{
+                $value = (is_numeric($restriction)) ? (int)$restriction : $restriction;
+                $restrictions[$key] = $value;
             }
         }
 
-        return $restrictions;
+        return array_replace($restrictionsArray, $restrictions);
     }
 
     /**

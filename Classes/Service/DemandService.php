@@ -10,6 +10,8 @@ use Pixelant\Demander\Utility\DemandArrayUtility;
 use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Utility\ArrayUtility;
+use Pixelant\Demander\Utility\UiArrayUtility;
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use \TYPO3\CMS\Extbase\Configuration\ConfigurationManager;
 
@@ -145,7 +147,20 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
      */
     public function getUiConfigurationForProperty(string $propertyName): array
     {
-        // TODO: Generate and return UI configuration
+        $tableAndField = UiArrayUtility::propertyNameToTableAndFieldName($propertyName);
+        $table = $tableAndField[0];
+        $field = $tableAndField[1];
+        $tcaConfiguration = $GLOBALS['TCA'][$table]['columns'][$field];
+        $configurationManager = GeneralUtility::makeInstance(ConfigurationManager::class);
+        $config = $configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_FULL_TYPOSCRIPT)['config.']['tx_demander.']['ui.'][$table.'.'][$field.'.'];
+        $config = UiArrayUtility::removeDotsFromKeys($config);
+
+        if (!$tcaConfiguration){
+            return [];
+        }
+
+        return UiArrayUtility::overrideProperties($config, $tcaConfiguration);
+
     }
 
     /**
@@ -178,7 +193,15 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
      */
     public function getOuterBoundsForProperty(string $propertyName): array
     {
-        // TODO: Implement calculation of outer bounds. Use getUiConfigurationForProperty() as much as possible.
+        $outerBounds = [];
+        $uiConfiguration = $this->getUiConfigurationForProperty($propertyName);
+        $type = $uiConfiguration['config']['type'];
+
+        if ($type === 'select' || $type === 'check'|| $type === 'radio'){
+            $outerBounds = $uiConfiguration['config']['items'];
+        }
+
+        return $outerBounds;
     }
 
     public function getInnerBoundsForProperties(array $propertyNames): array
@@ -204,7 +227,18 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
      */
     public function getInnerBoundsForProperty(string $propertyName): array
     {
-        // TODO: Implement calculation of inner bounds
+        $innerBounds = [];
+        $demands = $this->getDemandsFromDemandProviders();
+        $restrictions = array_column($demands, $propertyName);
+
+        foreach ($restrictions as $restriction){
+            if (is_array($restriction['value'])){
+                return $restriction['value'];
+            }else{
+                $innerBounds[] = $restriction['value'];
+            }
+        }
+        return $innerBounds;
     }
 
     /**
@@ -223,5 +257,23 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
             $demandProviders[$id] = GeneralUtility::makeInstance($demandProvider);
         }
         return $demandProviders;
+    }
+
+    /**
+     * Returns summary array with all demands from demand providers.
+     *
+     * @return array
+     */
+    protected function getDemandsFromDemandProviders(): array
+    {
+        $demands = [];
+        $demandProviders = $this->getConfiguredDemandProviders();
+
+        foreach ($demandProviders as $id => $object){
+            $demand = $object->getDemand();
+            $demands = array_merge_recursive($demands, $demand);
+        }
+
+        return $demands;
     }
 }
