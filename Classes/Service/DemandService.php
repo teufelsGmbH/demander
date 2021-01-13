@@ -81,14 +81,14 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
         foreach ($demandArray as $key => $restrictions) {
             if ($restrictions['operator']){
                 $fieldProperties = DemandArrayUtility::getFieldPropertiesFromAlias([$key]);
-            }else{
+            } else {
                 $fieldProperties = DemandArrayUtility::getFieldPropertiesFromAlias($restrictions, $key);
             }
 
             foreach ($fieldProperties as $fieldKey => $fieldProperty){
                 if (is_string($fieldProperty)){
                     $expressions[] = DemandArrayUtility::convertRestrictionToExpression($fieldProperty, $restrictions, $expressionBuilder);
-                }else{
+                } else {
                     $expressions[] = DemandArrayUtility::toExpression($fieldProperty, $expressionBuilder, $fieldKey);
                 }
             }

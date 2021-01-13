@@ -67,7 +67,7 @@ class DemandArrayUtility
             foreach ($array as $tableFieldAlias => $values){
                 if (is_array($values[array_key_first($values)])){
                     $filteredArray[$tableFieldAlias] = DemandArrayUtility::filterByTables($tables,$values);
-                }else{
+                } else {
                     $tableName = DemandArrayUtility::propertyNameToTableAndFieldName($tableFieldAlias)[0];
 
                     if ($tableName === $table){
@@ -121,11 +121,11 @@ class DemandArrayUtility
                 if (is_array($value[array_key_first($value)])){
                     $key = trim($key, '.');
                     $filteredArray[$key] = DemandArrayUtility::removeDotsFromKeys($value);
-                }else{
+                } else {
                     $key = trim($key, '.');
                     $filteredArray[$key] = $value;
                 }
-            } else{
+            } else {
                 $key = trim($key, '.');
                 $filteredArray[$key] = $value;
             }
@@ -146,8 +146,7 @@ class DemandArrayUtility
         foreach ($restrictionsArray as $key => $restriction) {
             if (is_array($restriction)) {
                 $restrictions[$key] = DemandArrayUtility::restrictionsToInt($restriction);
-            }
-            else{
+            } else {
                 $value = (is_numeric($restriction)) ? (int)$restriction : $restriction;
                 $restrictions[$key] = $value;
             }
@@ -203,6 +202,7 @@ class DemandArrayUtility
             }
             return $fieldProperties;
         }
+        
         $fieldProperties[] = DemandArrayUtility::propertyNameToTableAndFieldName($alias[0])[1];
         return $fieldProperties;
     }
