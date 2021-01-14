@@ -12,6 +12,9 @@ use TYPO3\CMS\Extbase\Configuration\ConfigurationManager;
 
 class TypoScriptDemandProvider implements DemandProviderInterface
 {
+    /**
+     * @return array
+     */
     public function getDemand(): array
     {
         $configurationManager = GeneralUtility::makeInstance(ConfigurationManager::class);
