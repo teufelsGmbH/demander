@@ -6,8 +6,14 @@ declare(strict_types=1);
 namespace Pixelant\Demander\Service;
 
 use Pixelant\Demander\DemandProvider\DemandProviderInterface;
+use Pixelant\Demander\Utility\DemandArrayUtility;
 use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
+use TYPO3\CMS\Core\Utility\ArrayUtility;
+use Pixelant\Demander\Utility\UiArrayUtility;
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use \TYPO3\CMS\Extbase\Configuration\ConfigurationManager;
 
 /**
  * Main API entry point for using demands from the Demander Extension
@@ -45,7 +51,11 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
         ExpressionBuilder $expressionBuilder
     ): CompositeExpression
     {
-        // TODO: Set $demandArray to merged, returned values of $demandProviders
+        $demandArray = [];
+
+        foreach ($demandProviders as $demandProvider) {
+            ArrayUtility::mergeRecursiveWithOverrule($demandArray, $demandProvider->getDemand());
+        }
 
         return $this->getRestrictionsFromDemandArray($demandArray, $tables, $expressionBuilder);
     }
@@ -64,7 +74,26 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
         ExpressionBuilder $expressionBuilder
     ): CompositeExpression
     {
-        // TODO: Most of the code for getting restrictions in this class goes here
+        $demandArray = DemandArrayUtility::restrictionsToInt($demandArray);
+        $demandArray = DemandArrayUtility::filterByTables($tables, $demandArray);
+        $expressions = [];
+
+        foreach ($demandArray as $key => $restrictions) {
+            if ($restrictions['operator']){
+                $fieldProperties = DemandArrayUtility::getFieldPropertiesFromAlias([$key]);
+            } else {
+                $fieldProperties = DemandArrayUtility::getFieldPropertiesFromAlias($restrictions, $key);
+            }
+
+            foreach ($fieldProperties as $fieldKey => $fieldProperty){
+                if (is_string($fieldProperty)){
+                    $expressions[] = DemandArrayUtility::convertRestrictionToExpression($fieldProperty, $restrictions, $expressionBuilder);
+                } else {
+                    $expressions[] = DemandArrayUtility::toExpression($fieldProperty, $expressionBuilder, $fieldKey);
+                }
+            }
+        }
+        return $expressionBuilder->andX(...$expressions);
     }
 
     /**
@@ -118,7 +147,18 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
      */
     public function getUiConfigurationForProperty(string $propertyName): array
     {
-        // TODO: Generate and return UI configuration
+        list($table, $field) = UiArrayUtility::propertyNameToTableAndFieldName($propertyName);
+        $tcaConfiguration = $GLOBALS['TCA'][$table]['columns'][$field];
+
+        if (!$tcaConfiguration){
+            return [];
+        }
+
+        $configurationManager = GeneralUtility::makeInstance(ConfigurationManager::class);
+        $config = $configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_FULL_TYPOSCRIPT)['config.']['tx_demander.']['ui.'][$table.'.'][$field.'.'];
+        $config = UiArrayUtility::removeDotsFromKeys($config);
+
+        return UiArrayUtility::overrideProperties($config, $tcaConfiguration);
     }
 
     /**
@@ -151,7 +191,15 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
      */
     public function getOuterBoundsForProperty(string $propertyName): array
     {
-        // TODO: Implement calculation of outer bounds. Use getUiConfigurationForProperty() as much as possible.
+        $outerBounds = [];
+        $uiConfiguration = $this->getUiConfigurationForProperty($propertyName);
+        $type = $uiConfiguration['config']['type'];
+
+        if ($type === 'select' || $type === 'check'|| $type === 'radio'){
+            $outerBounds = $uiConfiguration['config']['items'];
+        }
+
+        return $outerBounds;
     }
 
     public function getInnerBoundsForProperties(array $propertyNames): array
@@ -177,7 +225,18 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
      */
     public function getInnerBoundsForProperty(string $propertyName): array
     {
-        // TODO: Implement calculation of inner bounds
+        $innerBounds = [];
+        $demands = $this->getDemandsFromDemandProviders();
+        $restrictions = array_column($demands, $propertyName);
+
+        foreach ($restrictions as $restriction){
+            if (is_array($restriction['value'])){
+                return $restriction['value'];
+            } else {
+                $innerBounds[] = $restriction['value'];
+            }
+        }
+        return $innerBounds;
     }
 
     /**
@@ -187,6 +246,32 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
      */
     protected function getConfiguredDemandProviders(): array
     {
-        // TODO: Initialize DemandProvider objects configured in TypoScript and return in order of execution
+        $configurationManager = GeneralUtility::makeInstance(ConfigurationManager::class);
+        $config = $configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_FULL_TYPOSCRIPT)['config.']['tx_demander.'];
+        $demandProviders = [];
+
+        foreach ($config['demandProviders.'] as $id => $demandProvider)
+        {
+            $demandProviders[$id] = GeneralUtility::makeInstance($demandProvider);
+        }
+        return $demandProviders;
+    }
+
+    /**
+     * Returns summary array with all demands from demand providers.
+     *
+     * @return array
+     */
+    protected function getDemandsFromDemandProviders(): array
+    {
+        $demands = [];
+        $demandProviders = $this->getConfiguredDemandProviders();
+
+        foreach ($demandProviders as $id => $object){
+            $demand = $object->getDemand();
+            $demands = array_merge_recursive($demands, $demand);
+        }
+
+        return $demands;
     }
 }
