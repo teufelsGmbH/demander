@@ -6,14 +6,13 @@ declare(strict_types=1);
 namespace Pixelant\Demander\Service;
 
 use Pixelant\Demander\DemandProvider\DemandProviderInterface;
+use Pixelant\Demander\Utility\ConfigurationUtility;
 use Pixelant\Demander\Utility\DemandArrayUtility;
 use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Utility\ArrayUtility;
 use Pixelant\Demander\Utility\UiArrayUtility;
-use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use \TYPO3\CMS\Extbase\Configuration\ConfigurationManager;
 
 /**
  * Main API entry point for using demands from the Demander Extension
@@ -75,24 +74,23 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
     ): CompositeExpression
     {
         $demandArray = DemandArrayUtility::restrictionsToInt($demandArray);
-        $demandArray = DemandArrayUtility::filterByTables($tables, $demandArray);
+        $properties = $this->getPropertiesForDemandedTables($tables, $demandArray);
         $expressions = [];
 
-        foreach ($demandArray as $key => $restrictions) {
-            if ($restrictions['operator']){
-                $fieldProperties = DemandArrayUtility::getFieldPropertiesFromAlias([$key]);
+        foreach ($properties as $key => $property){
+            if ($key === 'or' || $key === 'and'){
+                $expressions[] = DemandArrayUtility::toExpression($properties[$key], $expressionBuilder, $key);
             } else {
-                $fieldProperties = DemandArrayUtility::getFieldPropertiesFromAlias($restrictions, $key);
-            }
-
-            foreach ($fieldProperties as $fieldKey => $fieldProperty){
-                if (is_string($fieldProperty)){
-                    $expressions[] = DemandArrayUtility::convertRestrictionToExpression($fieldProperty, $restrictions, $expressionBuilder);
-                } else {
-                    $expressions[] = DemandArrayUtility::toExpression($fieldProperty, $expressionBuilder, $fieldKey);
-                }
+                $expressions[] = DemandArrayUtility::toExpression($property, $expressionBuilder);
             }
         }
+
+        $defaultConjunction = ConfigurationUtility::getExtensionConfiguration()['defaultConjunction'];
+
+        if ($defaultConjunction === 'or'){
+            return $expressionBuilder->orX(...$expressions);
+        }
+
         return $expressionBuilder->andX(...$expressions);
     }
 
@@ -154,9 +152,7 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
             return [];
         }
 
-        $configurationManager = GeneralUtility::makeInstance(ConfigurationManager::class);
-        $config = $configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_FULL_TYPOSCRIPT)['config.']['tx_demander.']['ui.'][$table.'.'][$field.'.'];
-        $config = UiArrayUtility::removeDotsFromKeys($config);
+        $config = ConfigurationUtility::getExtensionConfiguration()[$table][$field];
 
         return UiArrayUtility::overrideProperties($config, $tcaConfiguration);
     }
@@ -246,11 +242,10 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
      */
     protected function getConfiguredDemandProviders(): array
     {
-        $configurationManager = GeneralUtility::makeInstance(ConfigurationManager::class);
-        $config = $configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_FULL_TYPOSCRIPT)['config.']['tx_demander.'];
+        $config = ConfigurationUtility::getExtensionConfiguration();
         $demandProviders = [];
 
-        foreach ($config['demandProviders.'] as $id => $demandProvider)
+        foreach ($config['demandProviders'] as $id => $demandProvider)
         {
             $demandProviders[$id] = GeneralUtility::makeInstance($demandProvider);
         }
@@ -273,5 +268,61 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
         }
 
         return $demands;
+    }
+
+    /**
+     * @param array $tables
+     * @param array $demands
+     * @return array
+     */
+    protected function getPropertiesForDemandedTables(array $tables, array $demands): array
+    {
+        $properties = ConfigurationUtility::getExtensionConfiguration()['properties'];
+        $demandedProperties = [];
+
+        if (!$demandedProperties['or'] && !$demandedProperties['and']){
+            if ($demands['or'] || $demands['and']){
+                $or = ($demands['or']) ? 'or' : '';
+                $and = ($demands['and']) ? 'and' : '';
+
+                if ($or !== ''){
+                    foreach ($demands[$or] as $demandKey => $demand){
+                        foreach ($properties as $key => $property){
+                            if ($demandKey === $key){
+                                $demandedProperties[$or][$key] = $property;
+                            }
+                        }
+                    }
+                }
+
+                if ($and !== ''){
+                    foreach ($demands[$and] as $demandKey => $demand){
+                        foreach ($properties as $key => $property){
+                            if ($demandKey === $key){
+                                $demandedProperties[$and][$key] = $property;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
+        foreach ($tables as $alias => $table){
+            foreach ($properties as $key => $property){
+                if ($demandedProperties['or'][$key] || $demandedProperties['and'][$key]){
+                    if ($table === $property['table']){
+                        $demandedProperties['or'][$key]['alias'] = $alias;
+                    }
+                } else {
+                    if ($table === $property['table']){
+                        $demandedProperties[$key] = $property;
+                        $demandedProperties[$key]['alias'] = $alias;
+                    }
+                }
+            }
+        }
+
+        return array_merge_recursive($demandedProperties, $demands);
     }
 }
