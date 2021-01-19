@@ -37,10 +37,7 @@
   "autoload-dev": {
     "psr-4": {
       "Pixelant\\Demander\\Tests\\": "Tests/"
-    },
-    "files": [
-      "Tests/Utility/TestsUtility.php"
-    ]
+    }
   },
   "prefer-stable": true,
   "config": {
