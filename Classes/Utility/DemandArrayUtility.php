@@ -80,9 +80,8 @@ class DemandArrayUtility
             }
         }
 
-        switch ($conjunction){
-            case 'or':
-                return $expressionBuilder->orX(...$expressionsArr);
+        if ($conjunction === 'or'){
+            return $expressionBuilder->orX(...$expressionsArr);
         }
 
         return $expressionBuilder->andX(...$expressionsArr);
