@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Pixelant\Demander\DemandProvider;
 
 /**
- * Interface for demand providers
+ * Interface for demand providers.
  */
 interface DemandProviderInterface
 {
     /**
-     * Returns a standard demand array
+     * Returns a standard demand array.
      *
      * [
      *     'table1-field1' => [

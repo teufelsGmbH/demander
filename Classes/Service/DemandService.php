@@ -2,25 +2,24 @@
 
 declare(strict_types=1);
 
-
 namespace Pixelant\Demander\Service;
 
 use Pixelant\Demander\DemandProvider\DemandProviderInterface;
 use Pixelant\Demander\Utility\ConfigurationUtility;
 use Pixelant\Demander\Utility\DemandArrayUtility;
+use Pixelant\Demander\Utility\UiArrayUtility;
 use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Utility\ArrayUtility;
-use Pixelant\Demander\Utility\UiArrayUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
- * Main API entry point for using demands from the Demander Extension
+ * Main API entry point for using demands from the Demander Extension.
  */
 class DemandService implements \TYPO3\CMS\Core\SingletonInterface
 {
     /**
-     * Get active demand restrictions using configured DemandProviders
+     * Get active demand restrictions using configured DemandProviders.
      *
      * @param array $tables Array of tables, where array key is table alias and value is a table name
      * @param ExpressionBuilder $expressionBuilder
@@ -29,15 +28,14 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
     public function getRestrictions(
         array $tables,
         ExpressionBuilder $expressionBuilder
-    ): CompositeExpression
-    {
+    ): CompositeExpression {
         $demandProviders = $this->getConfiguredDemandProviders();
 
         return $this->getRestrictionsFromDemandProviders($demandProviders, $tables, $expressionBuilder);
     }
 
     /**
-     * Get active demand restrictions using provided DemandProviders
+     * Get active demand restrictions using provided DemandProviders.
      *
      * @param array<DemandProviderInterface> $demandProviders Array of FQCNs
      * @param array $tables Array of tables, where array key is table alias and value is a table name
@@ -48,8 +46,7 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
         array $demandProviders,
         array $tables,
         ExpressionBuilder $expressionBuilder
-    ): CompositeExpression
-    {
+    ): CompositeExpression {
         $demandArray = [];
 
         foreach ($demandProviders as $demandProvider) {
@@ -60,7 +57,7 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
     }
 
     /**
-     * Get active demand restrictions using provided DemandProviders
+     * Get active demand restrictions using provided DemandProviders.
      *
      * @param array $demandArray Demand array
      * @param array $tables Array of tables, where array key is table alias and value is a table name
@@ -71,14 +68,13 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
         array $demandArray,
         array $tables,
         ExpressionBuilder $expressionBuilder
-    ): CompositeExpression
-    {
+    ): CompositeExpression {
         $demandArray = DemandArrayUtility::restrictionsToInt($demandArray);
         $properties = $this->getPropertiesForDemandedTables($tables, $demandArray);
         $expressions = [];
 
-        foreach ($properties as $key => $property){
-            if ($key === 'or' || $key === 'and'){
+        foreach ($properties as $key => $property) {
+            if ($key === 'or' || $key === 'and') {
                 $expressions[] = DemandArrayUtility::toExpression($properties[$key], $expressionBuilder, $key);
             } else {
                 $expressions[] = DemandArrayUtility::toExpression($property, $expressionBuilder);
@@ -87,7 +83,7 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
 
         $defaultConjunction = ConfigurationUtility::getExtensionConfiguration()['defaultConjunction'];
 
-        if ($defaultConjunction === 'or'){
+        if ($defaultConjunction === 'or') {
             return $expressionBuilder->orX(...$expressions);
         }
 
@@ -95,7 +91,7 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
     }
 
     /**
-     * Returns an array of UI configurations for $propertyNames
+     * Returns an array of UI configurations for $propertyNames.
      *
      * @see DemandService::getUiConfigurationForProperty()
      * @param array $propertyNames Property names as [tablename-fieldname, tablename-fieldname]
@@ -113,7 +109,7 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
     }
 
     /**
-     * Returns a UI configuration array for $propertyName
+     * Returns a UI configuration array for $propertyName.
      *
      * This array is based on the TCA, but overridden by values in TypoScript: `config.tx_demander.ui`.
      *
@@ -145,10 +141,10 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
      */
     public function getUiConfigurationForProperty(string $propertyName): array
     {
-        list($table, $field) = UiArrayUtility::propertyNameToTableAndFieldName($propertyName);
+        [$table, $field] = UiArrayUtility::propertyNameToTableAndFieldName($propertyName);
         $tcaConfiguration = $GLOBALS['TCA'][$table]['columns'][$field];
 
-        if (!$tcaConfiguration){
+        if (!$tcaConfiguration) {
             return [];
         }
 
@@ -191,7 +187,7 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
         $uiConfiguration = $this->getUiConfigurationForProperty($propertyName);
         $type = $uiConfiguration['config']['type'];
 
-        if ($type === 'select' || $type === 'check'|| $type === 'radio'){
+        if ($type === 'select' || $type === 'check' || $type === 'radio') {
             $outerBounds = $uiConfiguration['config']['items'];
         }
 
@@ -210,7 +206,7 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
     }
 
     /**
-     * Return inner bounds (i.e. currently active restriction values) for $propertyName
+     * Return inner bounds (i.e. currently active restriction values) for $propertyName.
      *
      * For a slider, an array with [selected min, selected max] would be correct output.
      * For a drop-down or checkboxes, and array of all selected values would be correct output.
@@ -225,18 +221,18 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
         $demands = $this->getDemandsFromDemandProviders();
         $restrictions = array_column($demands, $propertyName);
 
-        foreach ($restrictions as $restriction){
-            if (is_array($restriction['value'])){
+        foreach ($restrictions as $restriction) {
+            if (is_array($restriction['value'])) {
                 return $restriction['value'];
-            } else {
-                $innerBounds[] = $restriction['value'];
             }
+            $innerBounds[] = $restriction['value'];
         }
+
         return $innerBounds;
     }
 
     /**
-     * Returns DemandProvider objects configured in TypoScript, in order of execution
+     * Returns DemandProvider objects configured in TypoScript, in order of execution.
      *
      * @return array<DemandProviderInterface>
      */
@@ -245,10 +241,10 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
         $config = ConfigurationUtility::getExtensionConfiguration();
         $demandProviders = [];
 
-        foreach ($config['demandProviders'] as $id => $demandProvider)
-        {
+        foreach ($config['demandProviders'] as $id => $demandProvider) {
             $demandProviders[$id] = GeneralUtility::makeInstance($demandProvider);
         }
+
         return $demandProviders;
     }
 
@@ -262,7 +258,7 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
         $demands = [];
         $demandProviders = $this->getConfiguredDemandProviders();
 
-        foreach ($demandProviders as $id => $object){
+        foreach ($demandProviders as $id => $object) {
             $demand = $object->getDemand();
             $demands = array_merge_recursive($demands, $demand);
         }
@@ -280,25 +276,25 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
         $properties = ConfigurationUtility::getExtensionConfiguration()['properties'];
         $demandedProperties = [];
 
-        if (!$demandedProperties['or'] && !$demandedProperties['and']){
-            if ($demands['or'] || $demands['and']){
+        if (!$demandedProperties['or'] && !$demandedProperties['and']) {
+            if ($demands['or'] || $demands['and']) {
                 $or = ($demands['or']) ? 'or' : '';
                 $and = ($demands['and']) ? 'and' : '';
 
-                if ($or !== ''){
-                    foreach ($demands[$or] as $demandKey => $demand){
-                        foreach ($properties as $key => $property){
-                            if ($demandKey === $key){
+                if ($or !== '') {
+                    foreach ($demands[$or] as $demandKey => $demand) {
+                        foreach ($properties as $key => $property) {
+                            if ($demandKey === $key) {
                                 $demandedProperties[$or][$key] = $property;
                             }
                         }
                     }
                 }
 
-                if ($and !== ''){
-                    foreach ($demands[$and] as $demandKey => $demand){
-                        foreach ($properties as $key => $property){
-                            if ($demandKey === $key){
+                if ($and !== '') {
+                    foreach ($demands[$and] as $demandKey => $demand) {
+                        foreach ($properties as $key => $property) {
+                            if ($demandKey === $key) {
                                 $demandedProperties[$and][$key] = $property;
                             }
                         }
@@ -307,15 +303,14 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
             }
         }
 
-
-        foreach ($tables as $alias => $table){
-            foreach ($properties as $key => $property){
-                if ($demandedProperties['or'][$key] || $demandedProperties['and'][$key]){
-                    if ($table === $property['table']){
+        foreach ($tables as $alias => $table) {
+            foreach ($properties as $key => $property) {
+                if ($demandedProperties['or'][$key] || $demandedProperties['and'][$key]) {
+                    if ($table === $property['table']) {
                         $demandedProperties['or'][$key]['alias'] = $alias;
                     }
                 } else {
-                    if ($table === $property['table']){
+                    if ($table === $property['table']) {
                         $demandedProperties[$key] = $property;
                         $demandedProperties[$key]['alias'] = $alias;
                     }

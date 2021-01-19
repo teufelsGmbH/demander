@@ -2,11 +2,9 @@
 
 declare(strict_types=1);
 
-
 namespace Pixelant\Demander\DemandProvider;
 
 use Pixelant\Demander\Utility\ConfigurationUtility;
-
 
 class TypoScriptDemandProvider implements DemandProviderInterface
 {
@@ -17,9 +15,10 @@ class TypoScriptDemandProvider implements DemandProviderInterface
     {
         $config = ConfigurationUtility::getExtensionConfiguration();
 
-        if ($config['demands']){
+        if ($config['demands']) {
             return $config['demands'];
         }
+
         return [];
     }
 }

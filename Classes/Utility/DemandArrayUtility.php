@@ -2,20 +2,18 @@
 
 declare(strict_types=1);
 
-
 namespace Pixelant\Demander\Utility;
-
 
 use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 
 /**
- * Utility for processing and modifying demand arrays
+ * Utility for processing and modifying demand arrays.
  */
 class DemandArrayUtility
 {
     /**
-     * Returns a string with tablename-fieldname
+     * Returns a string with tablename-fieldname.
      *
      * @param string $table
      * @param string $field
@@ -23,11 +21,11 @@ class DemandArrayUtility
      */
     public static function tableAndFieldNameToPropertyName(string $table, string $field): string
     {
-        return $table.'-'.$field;
+        return $table . '-' . $field;
     }
 
     /**
-     * Returns tablename-fieldname as [tablename, fieldname]
+     * Returns tablename-fieldname as [tablename, fieldname].
      *
      * @param string $string
      * @return array|null
@@ -38,7 +36,7 @@ class DemandArrayUtility
     }
 
     /**
-     * Converts a demand array into a composite query expression
+     * Converts a demand array into a composite query expression.
      *
      * @param array $properties
      * @param ExpressionBuilder $expressionBuilder
@@ -49,38 +47,38 @@ class DemandArrayUtility
     {
         $expressionsArr = [];
 
-        if (is_array($properties[array_key_first($properties)])){
-            foreach ($properties as  $property){
-                $expressionsArr[] = DemandArrayUtility::toExpression($property, $expressionBuilder);
+        if (is_array($properties[array_key_first($properties)])) {
+            foreach ($properties as  $property) {
+                $expressionsArr[] = self::toExpression($property, $expressionBuilder);
             }
         } else {
-            $fieldName = $properties['alias'].'.'.$properties['field'];
+            $fieldName = $properties['alias'] . '.' . $properties['field'];
             $tempRestrictions = [];
             $tempConjunction = '';
 
-            if ($properties['additionalRestriction']){
-                foreach ($properties['additionalRestriction'] as $key => $additionalRestriction){
-                    list($table, $field) = DemandArrayUtility::propertyNameToTableAndFieldName($key);
-                    $tempFieldName = $table.'.'.$field;
+            if ($properties['additionalRestriction']) {
+                foreach ($properties['additionalRestriction'] as $key => $additionalRestriction) {
+                    [$table, $field] = self::propertyNameToTableAndFieldName($key);
+                    $tempFieldName = $table . '.' . $field;
                     $tempConjunction = $additionalRestriction['conjunction'];
-                    $tempRestrictions[] = DemandArrayUtility::convertRestrictionToExpression($tempFieldName, $additionalRestriction, $expressionBuilder);
+                    $tempRestrictions[] = self::convertRestrictionToExpression($tempFieldName, $additionalRestriction, $expressionBuilder);
                 }
             }
 
-            if (!empty($tempRestrictions)){
-                $tempRestrictions[] = DemandArrayUtility::convertRestrictionToExpression($fieldName, $properties, $expressionBuilder);
+            if (!empty($tempRestrictions)) {
+                $tempRestrictions[] = self::convertRestrictionToExpression($fieldName, $properties, $expressionBuilder);
 
-                if ($tempConjunction === 'or'){
+                if ($tempConjunction === 'or') {
                     $expressionsArr[] = $expressionBuilder->orX(...$tempRestrictions);
                 } else {
                     $expressionsArr[] = $expressionBuilder->andX(...$tempRestrictions);
                 }
             } else {
-                $expressionsArr[] = DemandArrayUtility::convertRestrictionToExpression($fieldName, $properties, $expressionBuilder);
+                $expressionsArr[] = self::convertRestrictionToExpression($fieldName, $properties, $expressionBuilder);
             }
         }
 
-        if ($conjunction === 'or'){
+        if ($conjunction === 'or') {
             return $expressionBuilder->orX(...$expressionsArr);
         }
 
@@ -97,19 +95,20 @@ class DemandArrayUtility
     {
         $filteredArray = [];
 
-        foreach ($array as $key => $value){
-            if (is_array($value)){
-                if (!is_int($key)){
+        foreach ($array as $key => $value) {
+            if (is_array($value)) {
+                if (!is_int($key)) {
                     $key = trim($key, '.');
                 }
-                $filteredArray[$key] = DemandArrayUtility::removeDotsFromKeys($value);
+                $filteredArray[$key] = self::removeDotsFromKeys($value);
             } else {
-                if (!is_int($key)){
+                if (!is_int($key)) {
                     $key = trim($key, '.');
                 }
                 $filteredArray[$key] = $value;
             }
         }
+
         return $filteredArray;
     }
 
@@ -125,7 +124,7 @@ class DemandArrayUtility
 
         foreach ($restrictionsArray as $key => $restriction) {
             if (is_array($restriction)) {
-                $restrictions[$key] = DemandArrayUtility::restrictionsToInt($restriction);
+                $restrictions[$key] = self::restrictionsToInt($restriction);
             } else {
                 $value = (is_numeric($restriction)) ? (int)$restriction : $restriction;
                 $restrictions[$key] = $value;
@@ -143,7 +142,7 @@ class DemandArrayUtility
      */
     public static function convertRestrictionToExpression(string $fieldname, array $restrictions, ExpressionBuilder $expressionBuilder): string
     {
-        switch ($restrictions['operator']){
+        switch ($restrictions['operator']) {
             case $expressionBuilder::EQ:
                 return $expressionBuilder->eq($fieldname, $restrictions['value']);
             case $expressionBuilder::GT:
