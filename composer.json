@@ -67,7 +67,7 @@
         "@ci:tests"
     ],
     "ci:php": [
-        "@ci:php:codestyle",
+        "@ci:php:codestyle"
     ],
     "ci:static": [
         "@ci:php:lint",
