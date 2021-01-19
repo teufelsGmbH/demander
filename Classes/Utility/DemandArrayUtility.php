@@ -2,21 +2,18 @@
 
 declare(strict_types=1);
 
-
 namespace Pixelant\Demander\Utility;
 
-
 use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
-use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 
 /**
- * Utility for processing and modifying demand arrays
+ * Utility for processing and modifying demand arrays.
  */
 class DemandArrayUtility
 {
     /**
-     * Returns a string with tablename-fieldname
+     * Returns a string with tablename-fieldname.
      *
      * @param string $table
      * @param string $field
@@ -24,11 +21,11 @@ class DemandArrayUtility
      */
     public static function tableAndFieldNameToPropertyName(string $table, string $field): string
     {
-        return $table.'-'.$field;
+        return $table . '-' . $field;
     }
 
     /**
-     * Returns tablename-fieldname as [tablename, fieldname]
+     * Returns tablename-fieldname as [tablename, fieldname].
      *
      * @param string $string
      * @return array|null
@@ -39,71 +36,53 @@ class DemandArrayUtility
     }
 
     /**
-     * Merges two demand arrays intelligently and recursively
+     * Converts a demand array into a composite query expression.
      *
-     * If 'operand' => '-', two items in 'values' => [max, min] are maintained
-     * If 'operand' => 'in', items are appended to 'values' => [...] (unique values)
-     *
-     * @param array ...$arrays
-     * @return array
-     */
-    public static function merge(array ...$arrays): array
-    {
-
-    }
-
-    /**
-     * Filter array to include only requests tables and their relevant relations
-     *
-     * @param array $tables Array of tables, where array key is table alias and value is a table name
-     * @param array $array The demand array
-     * @return array Filtered demand array
-     */
-    public static function filterByTables(array $tables, array $array): array
-    {
-        $filteredArray = [];
-
-        foreach ($tables as $alias => $table) {
-            foreach ($array as $tableFieldAlias => $values){
-                if (is_array($values[array_key_first($values)])){
-                    $filteredArray[$tableFieldAlias] = DemandArrayUtility::filterByTables($tables,$values);
-                } else {
-                    $tableName = DemandArrayUtility::propertyNameToTableAndFieldName($tableFieldAlias)[0];
-
-                    if ($tableName === $table){
-                        $filteredArray[$tableFieldAlias] = $values;
-                    }
-                }
-            }
-        }
-
-        return $filteredArray;
-    }
-
-    /**
-     * Converts a demand array into a composite query expression
-     *
-     * @param array $array
+     * @param array $properties
      * @param ExpressionBuilder $expressionBuilder
      * @param string $conjunction
      * @return CompositeExpression
      */
-    public static function toExpression(array $array, ExpressionBuilder $expressionBuilder, string $conjunction = ''): CompositeExpression
+    public static function toExpression(array $properties, ExpressionBuilder $expressionBuilder, string $conjunction = 'and'): CompositeExpression
     {
         $expressionsArr = [];
 
-        foreach ($array as $fieldKey => $field){
-            foreach ($field as $properties) {
-                $expressionsArr[] = DemandArrayUtility::convertRestrictionToExpression($fieldKey, $properties, $expressionBuilder);
+        if (is_array($properties[array_key_first($properties)])) {
+            foreach ($properties as  $property) {
+                $expressionsArr[] = self::toExpression($property, $expressionBuilder);
+            }
+        } else {
+            $fieldName = $properties['alias'] . '.' . $properties['field'];
+            $tempRestrictions = [];
+            $tempConjunction = '';
+
+            if ($properties['additionalRestriction']) {
+                foreach ($properties['additionalRestriction'] as $key => $additionalRestriction) {
+                    [$table, $field] = self::propertyNameToTableAndFieldName($key);
+                    $tempFieldName = $table . '.' . $field;
+                    $tempConjunction = $additionalRestriction['conjunction'];
+                    $tempRestrictions[] = self::convertRestrictionToExpression($tempFieldName, $additionalRestriction, $expressionBuilder);
+                }
+            }
+
+            if (!empty($tempRestrictions)) {
+                $tempRestrictions[] = self::convertRestrictionToExpression($fieldName, $properties, $expressionBuilder);
+
+                if ($tempConjunction === 'or') {
+                    $expressionsArr[] = $expressionBuilder->orX(...$tempRestrictions);
+                } else {
+                    $expressionsArr[] = $expressionBuilder->andX(...$tempRestrictions);
+                }
+            } else {
+                $expressionsArr[] = self::convertRestrictionToExpression($fieldName, $properties, $expressionBuilder);
             }
         }
 
-        switch ($conjunction){
-            case 'or':
-                return $expressionBuilder->orX(...$expressionsArr);
-            default:
-                return $expressionBuilder->andX(...$expressionsArr);
+        if ($conjunction === 'or') {
+            return $expressionBuilder->orX(...$expressionsArr);
         }
+
+        return $expressionBuilder->andX(...$expressionsArr);
     }
 
     /**
@@ -116,20 +95,20 @@ class DemandArrayUtility
     {
         $filteredArray = [];
 
-        foreach ($array as $key => $value){
-            if (is_array($value)){
-                if (is_array($value[array_key_first($value)])){
+        foreach ($array as $key => $value) {
+            if (is_array($value)) {
+                if (!is_int($key)) {
                     $key = trim($key, '.');
-                    $filteredArray[$key] = DemandArrayUtility::removeDotsFromKeys($value);
-                } else {
-                    $key = trim($key, '.');
-                    $filteredArray[$key] = $value;
                 }
+                $filteredArray[$key] = self::removeDotsFromKeys($value);
             } else {
-                $key = trim($key, '.');
+                if (!is_int($key)) {
+                    $key = trim($key, '.');
+                }
                 $filteredArray[$key] = $value;
             }
         }
+
         return $filteredArray;
     }
 
@@ -145,7 +124,7 @@ class DemandArrayUtility
 
         foreach ($restrictionsArray as $key => $restriction) {
             if (is_array($restriction)) {
-                $restrictions[$key] = DemandArrayUtility::restrictionsToInt($restriction);
+                $restrictions[$key] = self::restrictionsToInt($restriction);
             } else {
                 $value = (is_numeric($restriction)) ? (int)$restriction : $restriction;
                 $restrictions[$key] = $value;
@@ -163,7 +142,7 @@ class DemandArrayUtility
      */
     public static function convertRestrictionToExpression(string $fieldname, array $restrictions, ExpressionBuilder $expressionBuilder): string
     {
-        switch ($restrictions['operator']){
+        switch ($restrictions['operator']) {
             case $expressionBuilder::EQ:
                 return $expressionBuilder->eq($fieldname, $restrictions['value']);
             case $expressionBuilder::GT:
@@ -176,34 +155,13 @@ class DemandArrayUtility
                 return $expressionBuilder->lte($fieldname, $restrictions['value']);
             case '-':
                 return $expressionBuilder->andX(
-                    $expressionBuilder->gte($fieldname, $restrictions['value'][0]),
-                    $expressionBuilder->lte($fieldname, $restrictions['value'][1])
+                    $expressionBuilder->gte($fieldname, $restrictions['value']['min']),
+                    $expressionBuilder->lte($fieldname, $restrictions['value']['max'])
                 )->__toString();
+            case 'in':
+                return $expressionBuilder->in($fieldname, $restrictions['value']);
             default:
                 return $fieldname;
         }
-    }
-
-    /**
-     * Resolve field properties from alias.
-     *
-     * @param array $alias
-     * @param null $rootKey
-     * @return array
-     */
-    public static function getFieldPropertiesFromAlias(array $alias, $rootKey = null): array
-    {
-        $fieldProperties = [];
-
-        if ($rootKey !== null){
-            foreach ($alias as $key => $subAlias){
-                $fieldName = DemandArrayUtility::getFieldPropertiesFromAlias([$key])[0];
-                $fieldProperties[$rootKey][$fieldName] = [$subAlias];
-            }
-            return $fieldProperties;
-        }
-        
-        $fieldProperties[] = DemandArrayUtility::propertyNameToTableAndFieldName($alias[0])[1];
-        return $fieldProperties;
     }
 }

@@ -37,10 +37,7 @@
   "autoload-dev": {
     "psr-4": {
       "Pixelant\\Demander\\Tests\\": "Tests/"
-    },
-    "files": [
-      "Tests/Utility/TestsUtility.php"
-    ]
+    }
   },
   "prefer-stable": true,
   "config": {
@@ -53,7 +50,6 @@
   "scripts": {
     "ci:php:lint": "find *.php Classes Configuration Tests -name '*.php' -print0 | xargs -0 -n 1 -P 4 php -l",
     "ci:php:codestyle": "php-cs-fixer fix --config .php_cs.php -v --dry-run --using-cache false --diff --diff-format=udiff",
-    "ci:php:sniff": ".Build/vendor/bin/phpcs Classes Configuration Tests",
     "ci:json:lint": "find . ! -path '*.Build/*' -name '*.json' | xargs .Build/vendor/bin/jsonlint -q",
     "ci:yaml:lint": "find . ! -path '*.Build/*' -name '*.yml' | xargs .Build/vendor/bin/yaml-lint",
     "ci:ts:lint": ".Build/vendor/bin/typoscript-lint -c Configuration/TsLint.yml --ansi -n --fail-on-warnings -vvv Configuration/TypoScript",
@@ -71,8 +67,7 @@
         "@ci:tests"
     ],
     "ci:php": [
-        "@ci:php:codestyle",
-        "@ci:php:sniff"
+        "@ci:php:codestyle"
     ],
     "ci:static": [
         "@ci:php:lint",
@@ -87,10 +82,8 @@
         "@php -r 'file_exists($extFolder=__DIR__.\"/.Build/public/typo3conf/ext/pxa_product_manager\") || symlink(__DIR__,$extFolder);'"
     ],
     "fix:php:cs": "php-cs-fixer fix --config .php_cs.php",
-    "fix:php:sniff": ".Build/vendor/bin/phpcs Classes Configuration Tests",
     "fix:php": [
-        "@fix:php:cs",
-        "@fix:php:sniff"
+        "@fix:php:cs"
     ],
     "docs:generate": [
       "docker run --rm t3docs/render-documentation show-shell-commands > tempfile.sh; echo 'dockrun_t3rd makehtml' >> tempfile.sh; bash tempfile.sh; rm tempfile.sh"

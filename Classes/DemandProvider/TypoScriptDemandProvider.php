@@ -2,13 +2,9 @@
 
 declare(strict_types=1);
 
-
 namespace Pixelant\Demander\DemandProvider;
 
-use Pixelant\Demander\Utility\DemandArrayUtility;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Extbase\Configuration\ConfigurationManager;
-
+use Pixelant\Demander\Utility\ConfigurationUtility;
 
 class TypoScriptDemandProvider implements DemandProviderInterface
 {
@@ -17,12 +13,12 @@ class TypoScriptDemandProvider implements DemandProviderInterface
      */
     public function getDemand(): array
     {
-        $configurationManager = GeneralUtility::makeInstance(ConfigurationManager::class);
-        $config = $configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_FULL_TYPOSCRIPT)['config.']['tx_demander.'];
+        $config = ConfigurationUtility::getExtensionConfiguration();
 
-        if ($config['demands.']){
-            return DemandArrayUtility::removeDotsFromKeys($config['demands.']);
+        if ($config['demands']) {
+            return $config['demands'];
         }
+
         return [];
     }
 }

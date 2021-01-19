@@ -2,18 +2,15 @@
 
 declare(strict_types=1);
 
-
 namespace Pixelant\Demander\Utility;
 
-use Pixelant\Demander\Utility\DemandArrayUtility;
-
 /**
- * Utility for processing and modifying ui arrays
+ * Utility for processing and modifying ui arrays.
  */
-class UiArrayUtility {
-
+class UiArrayUtility
+{
     /**
-     * Returns tablename-fieldname as [tablename, fieldname]
+     * Returns tablename-fieldname as [tablename, fieldname].
      *
      * @param string $string
      * @return array|null
@@ -54,11 +51,11 @@ class UiArrayUtility {
      */
     public static function overrideProperties(array $overrideProperties, array $defaultProperties): array
     {
-        $overrideProperties = UiArrayUtility::restrictionsToInt($overrideProperties);
+        $overrideProperties = self::restrictionsToInt($overrideProperties);
         $filteredArray = [];
 
-        foreach ($overrideProperties as $key => $property){
-            if (array_key_exists($key, $defaultProperties)){
+        foreach ($overrideProperties as $key => $property) {
+            if (array_key_exists($key, $defaultProperties)) {
                 $filteredArray[$key] = $property;
             }
         }
