@@ -1,6 +1,6 @@
 ---
 name: CI
-on: [push, pull_request]
+on: [pull_request]
 jobs:
   php-lint:
     name: "PHP linter"
@@ -52,7 +52,6 @@ jobs:
           - "ts:lint"
           - "yaml:lint"
           - "json:lint"
-          - "php:sniff"
           - "php:codestyle"
         php-version:
           - 7.4
