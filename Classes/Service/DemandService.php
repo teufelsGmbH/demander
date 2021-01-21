@@ -284,8 +284,10 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
                 if ($or !== '') {
                     foreach ($demands[$or] as $demandKey => $demand) {
                         foreach ($properties as $key => $property) {
-                            if ($demandKey === $key) {
-                                $demandedProperties[$or][$key] = $property;
+                            foreach ($tables as $alias => $table) {
+                                if ($demandKey === $key && $table === $property['table']) {
+                                    $demandedProperties[$or][$key] = $property;
+                                }
                             }
                         }
                     }
@@ -294,8 +296,10 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
                 if ($and !== '') {
                     foreach ($demands[$and] as $demandKey => $demand) {
                         foreach ($properties as $key => $property) {
-                            if ($demandKey === $key) {
-                                $demandedProperties[$and][$key] = $property;
+                            foreach ($tables as $alias => $table) {
+                                if ($demandKey === $key && $table === $property['table']) {
+                                    $demandedProperties[$and][$key] = $property;
+                                }
                             }
                         }
                     }
