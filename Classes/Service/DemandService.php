@@ -10,6 +10,7 @@ use Pixelant\Demander\Utility\DemandArrayUtility;
 use Pixelant\Demander\Utility\UiArrayUtility;
 use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Utility\ArrayUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
@@ -267,6 +268,8 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
     }
 
     /**
+     * Resolving properties from tables given in demands.
+     *
      * @param array $tables
      * @param array $demands
      * @return array
@@ -322,6 +325,77 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
             }
         }
 
-        return array_merge_recursive($demandedProperties, $demands);
+        $filteredDemands = $this->filterDemandedProperties($demandedProperties, $demands);
+
+        return array_merge_recursive($demandedProperties, $filteredDemands);
+    }
+
+    /**
+     * Add sorting to QueryBuilder from demands.
+     *
+     * @param array $table Array of tables where key used as alias and value used as tablename.
+     * @param QueryBuilder $queryBuilder
+     * @return QueryBuilder
+     */
+    public function getSortBy(array $table, QueryBuilder $queryBuilder): QueryBuilder
+    {
+        $demands = $this->getDemandsFromDemandProviders();
+        $sortingArguments = $demands['orderBy'] ?? [];
+        $properties = ConfigurationUtility::getExtensionConfiguration()['properties'];
+
+        foreach ($sortingArguments as $argument) {
+            [$propertyName, $orderingDirection] = GeneralUtility::trimExplode(',', $argument);
+            $property = $properties[$propertyName];
+
+            if (null === $property) {
+                throw new \UnexpectedValueException(
+                    'Demanded property does not exist!'
+                );
+            }
+
+            $propertyTable = $property['table'];
+            $propertyField = $property['field'];
+            $tableAlias = $propertyTable;
+
+            foreach ($table as $alias => $tableName) {
+                if ($propertyTable === $tableName) {
+                    $tableAlias = $alias;
+                }
+            }
+
+            if ($orderingDirection) {
+                $queryBuilder->addOrderBy($tableAlias . '.' . $propertyField, strtoupper($orderingDirection));
+            } else {
+                $queryBuilder->addOrderBy($tableAlias . '.' . $propertyField);
+            }
+        }
+
+        return $queryBuilder;
+    }
+
+    /**
+     * Filter demands for existing only properties.
+     *
+     * @param array $properties
+     * @param array $demands
+     * @return array
+     */
+    public function filterDemandedProperties(array $properties, array $demands): array
+    {
+        $filteredProperties = [];
+
+        foreach ($demands as $key => $demand) {
+            foreach ($properties as $property) {
+                if ($key === 'or' || $key === 'and') {
+                    $filteredProperties[$key] = $this->filterDemandedProperties($properties, $demand);
+                } else {
+                    if (array_key_exists($key, $properties) || array_key_exists($key, $property)) {
+                        $filteredProperties[$key] = $demand;
+                    }
+                }
+            }
+        }
+
+        return $filteredProperties;
     }
 }
