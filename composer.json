@@ -14,8 +14,7 @@
   ],
   "require": {
     "php": "^7.4",
-    "typo3/cms-core": "^10.4.6",
-    "pixelant/pxa-product-manager": "dev-v10_alpha"
+    "typo3/cms-core": "^10.4.6"
   },
   "require-dev": {
     "codeception/codeception": "^4.1.5",
