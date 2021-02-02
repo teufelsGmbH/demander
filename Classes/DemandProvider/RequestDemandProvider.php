@@ -11,7 +11,7 @@ class RequestDemandProvider implements DemandProviderInterface
     public function getDemand(): array
     {
         $request = RequestSingleton::getInstance()->getRequest();
-        $demands = $request->getQueryParams()['d'];
+        $demands = $request->getParsedBody()['d'];
 
         if ($demands) {
             return $demands;
