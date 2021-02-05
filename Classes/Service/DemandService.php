@@ -242,8 +242,10 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
         $config = ConfigurationUtility::getExtensionConfiguration();
         $demandProviders = [];
 
-        foreach ($config['demandProviders'] as $id => $demandProvider) {
-            $demandProviders[$id] = GeneralUtility::makeInstance($demandProvider);
+        if (!empty($config['demandProviders'])) {
+            foreach ($config['demandProviders'] as $id => $demandProvider) {
+                $demandProviders[$id] = GeneralUtility::makeInstance($demandProvider);
+            }
         }
 
         return $demandProviders;
