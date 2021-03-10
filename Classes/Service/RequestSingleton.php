@@ -32,7 +32,7 @@ class RequestSingleton implements \TYPO3\CMS\Core\SingletonInterface
     {
     }
 
-    public function getRequest(): ServerRequestInterface
+    public function getRequest(): ?ServerRequestInterface
     {
         return $this->request;
     }
