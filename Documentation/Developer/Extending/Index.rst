@@ -2,37 +2,38 @@
 
 .. _extending:
 
-=====================
-Developer Information
-=====================
+=========
+Extending
+=========
 
-Use this section to provide examples of code or detail any information that would be deemed relevant to a developer.
+.. _extending-demandprovider:
 
-For example explain how a certain feature was implemented.
+Creating a custom :php:`DemandProvider`
+=======================================
 
+:php:`DemandProvider` classes add new sources for demands. I.e. places where
+filterrestrictions are defined. The extension already includes providers that
+provide demands from the HTTP request (:php:`RequestDemandProvider`) and
+TypoScript (:php:`TypoScriptDemandProvider`).
 
-.. _developer-api:
+All :php:`DemandProvider` classes must implement
+:php:`Pixelant\Demander\DemandProvider\DemandProviderInterface`.
 
-API
-===
-
-How to use the API...
+This example fetches demand from an environment variable:
 
 .. code-block:: php
 
-   $stuff = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(
-      '\\Foo\\Bar\\Utility\\Stuff'
-   );
-   $stuff->do();
+   use Pixelant\Demander\DemandProvider\DemandProviderInterface;
 
-or in some other language:
+   class EnvironmentVariableDemandProvider implements DemandProviderInterface
+   {
+       public function getDemand(): array
+       {
+           return json_decode(getenv('APP_DEMANDER'), true);
+       }
+   }
 
-.. code-block:: javascript
-   :linenos:
-   :emphasize-lines: 2-4
-
-   $(document).ready(
-      function () {
-         doStuff();
-      }
-   );
+The :php:`getDemand()` method always returns an associative array of demands.
+The format is explained in the
+:ref:`Configuration chapter's demand section <configuration-typoscript-demands>`
+.
