@@ -1,3 +1,9 @@
+# Demander
+
+Configurable, demand-based filtering framework with permalink-support for TYPO3.
+
+### Example configuration
+
 ```typo3_typoscript
   properties {
       property_name {
@@ -31,6 +37,6 @@
       }
 
       property_name3.value = 6
-      }
+    }
   }
 ```
