@@ -47,7 +47,7 @@ If you find an error or something is missing, please:
 
 **Extension Manual**
 
-This documentation is for the TYPO3 extension <extkey>.
+This documentation is for the TYPO3 extension <demander>.
 
 **For Contributors**
 
