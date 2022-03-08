@@ -9,7 +9,7 @@
 .. _start:
 
 =============================================================
-Extension Name
+Demander
 =============================================================
 
 :Version:
@@ -29,7 +29,7 @@ Extension Name
    `CC BY-NC-SA 4.0 <https://creativecommons.org/licenses/by-nc-sa/4.0/>`__ (Creative Commons)
    license
 
-{extension.description}
+Demander is a configurable, demand-based filtering framework with permalink-support for TYPO3.
 
 **TYPO3**
 
@@ -47,7 +47,7 @@ If you find an error or something is missing, please:
 
 **Extension Manual**
 
-This documentation is for the TYPO3 extension <extkey>.
+This documentation is for the TYPO3 extension <demander>.
 
 **For Contributors**
 
