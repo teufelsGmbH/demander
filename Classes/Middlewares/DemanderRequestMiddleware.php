@@ -14,9 +14,9 @@ class DemanderRequestMiddleware implements MiddlewareInterface
 {
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $demands = $request->getParsedBody()['d'];
+        $demands = $request->getParsedBody();
 
-        if ($demands) {
+        if (isset($demands['d'])) {
             RequestSingleton::getInstance()->setRequest($request);
         }
 
