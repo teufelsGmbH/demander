@@ -5,12 +5,18 @@
   "license": ["GPL-2.0-or-later"],
   "keywords": ["TYPO3 CMS"],
   "authors": [
-    {
-      "name": "Pixelant",
-      "email": "info@pixelant.net",
-      "homepage": "https://www.pixelant.net",
-      "role": "Developer"
-    }
+	{
+	  "name": "Pixelant",
+	  "email": "info@pixelant.net",
+	  "homepage": "https://www.pixelant.net",
+	  "role": "Developer"
+	},
+	{
+	  "name": "teufels GmbH",
+	  "email": "hallo@teufels.com",
+	  "homepage": "https://teufels.com/",
+	  "role": "Developer"
+	}
   ],
   "require": {
     "typo3/cms-core": "^10.4.6 || ^11.5 || ^12.4"

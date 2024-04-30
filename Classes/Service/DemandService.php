@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pixelant\Demander\Service;
 
+use TYPO3\CMS\Core\SingletonInterface;
 use Pixelant\Demander\DemandProvider\DemandProviderInterface;
 use Pixelant\Demander\Utility\ConfigurationUtility;
 use Pixelant\Demander\Utility\DemandArrayUtility;
@@ -17,7 +18,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 /**
  * Main API entry point for using demands from the Demander Extension.
  */
-class DemandService implements \TYPO3\CMS\Core\SingletonInterface
+class DemandService implements SingletonInterface
 {
     /**
      * Get active demand restrictions using configured DemandProviders.
@@ -85,10 +86,10 @@ class DemandService implements \TYPO3\CMS\Core\SingletonInterface
         $defaultConjunction = ConfigurationUtility::getExtensionConfiguration()['defaultConjunction'];
 
         if ($defaultConjunction === 'or') {
-            return $expressionBuilder->orX(...$expressions);
+            return $expressionBuilder->or(...$expressions);
         }
 
-        return $expressionBuilder->andX(...$expressions);
+        return $expressionBuilder->and(...$expressions);
     }
 
     /**

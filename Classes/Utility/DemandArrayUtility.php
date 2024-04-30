@@ -69,9 +69,9 @@ class DemandArrayUtility
                 $tempRestrictions[] = self::convertRestrictionToExpression($fieldName, $properties, $expressionBuilder);
 
                 if ($tempConjunction === 'or') {
-                    $expressionsArr[] = $expressionBuilder->orX(...$tempRestrictions);
+                    $expressionsArr[] = $expressionBuilder->or(...$tempRestrictions);
                 } else {
-                    $expressionsArr[] = $expressionBuilder->andX(...$tempRestrictions);
+                    $expressionsArr[] = $expressionBuilder->and(...$tempRestrictions);
                 }
             } else {
                 $expressionsArr[] = self::convertRestrictionToExpression($fieldName, $properties, $expressionBuilder);
@@ -79,10 +79,10 @@ class DemandArrayUtility
         }
 
         if ($conjunction === 'or') {
-            return $expressionBuilder->orX(...$expressionsArr);
+            return $expressionBuilder->or(...$expressionsArr);
         }
 
-        return $expressionBuilder->andX(...$expressionsArr);
+        return $expressionBuilder->and(...$expressionsArr);
     }
 
     /**
@@ -154,10 +154,7 @@ class DemandArrayUtility
             case $expressionBuilder::LTE:
                 return $expressionBuilder->lte($fieldname, $restrictions['value']);
             case '-':
-                return $expressionBuilder->andX(
-                    $expressionBuilder->gte($fieldname, $restrictions['value']['min']),
-                    $expressionBuilder->lte($fieldname, $restrictions['value']['max'])
-                )->__toString();
+                return $expressionBuilder->and($expressionBuilder->gte($fieldname, $restrictions['value']['min']), $expressionBuilder->lte($fieldname, $restrictions['value']['max']))->__toString();
             case 'in':
                 return $expressionBuilder->in($fieldname, $restrictions['value']);
             default:
